@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<h1>{% if item %}Edit{% else %}Quick capture{% endif %}</h1><form method="post"><textarea name="content" required>{{item.content if item else ''}}</textarea><button>Save</button></form>{% endblock %}

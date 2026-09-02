@@ -2,21 +2,24 @@
 
 ## Completed
 
-Implemented the initial FastAPI/SQLAlchemy backend under `backend/`, including
-the SQLite persistence model, idempotent relative sample seeding, dashboard,
-collection views, task creation, and unified search. The app uses local naive
-datetimes and server-rendered HTML with Bootstrap CDN styling.
+Implemented the complete FastAPI/SQLAlchemy backend under `backend/`, organized
+into database, models, validation helpers, services, routers, templates, and
+static assets. It provides all architecture-contract routes, SQLite persistence,
+associations, dashboard calculations, task recurrence, advisory commitment
+overlap detection, safe contact deletion, inbox processing, reminders, search,
+and idempotent sample seeding/reset.
 
 ## Decisions and caveats
 
-- `task_commitments` is reserved as the canonical association-table direction;
-  the current starter implementation keeps the first vertical slice focused on
-  core persistence and list/create/search behavior.
-- Explicit reminder rows are actionable; dashboard counts and open-task lists
-  are advisory and do not synthesize duplicate reminders.
-- Seed records are backend-authored and marked `is_sample`; the sample reset is
-  transactional and only removes marked records. The backend includes the
-  required action endpoints, collection/create flows, and POST edit handlers
-  with basic per-record validation; edit pages provide the detail surface for
-  the frontend stage to enhance.
-- Form dates accept ISO-compatible local datetime strings.
+- `task_commitments` is the canonical task/commitment association. The
+  architecture's duplicate `commitment_tasks` name was intentionally omitted
+  under the approved interpretation.
+- Explicit reminder rows are actionable; dashboard responsibility lists do not
+  synthesize duplicate reminders. Reminder tokens/external delivery are out of
+  scope.
+- Seed records are backend-authored, relative to local startup time, and marked
+  `is_sample`. Reset deletes and recreates only sample records, retaining user
+  rows.
+- Forms accept local ISO-compatible datetime input. Validation errors return
+  HTTP 422 with a clear server-side error; successful mutations use redirects
+  and flash-style query messages.

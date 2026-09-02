@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<h1>Contacts</h1><a href="/contacts/new">New contact</a><ul>{% for x in contacts %}<li><a href="/contacts/{{x.id}}/edit">{{x.name}}</a> — {{x.organization}} {% if x.is_sample %}(sample){% endif %}<form class="d-inline" method="post" action="/contacts/{{x.id}}/delete"><button>Delete</button></form></li>{% endfor %}</ul>{% endblock %}

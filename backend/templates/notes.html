@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<h1>Notes</h1><a href="/notes/new">New note</a><ul>{% for x in notes %}<li><a href="/notes/{{x.id}}/edit">{{x.title or x.content[:60]}}</a> — {{x.kind}} {% if x.is_sample %}(sample){% endif %}</li>{% endfor %}</ul>{% endblock %}
