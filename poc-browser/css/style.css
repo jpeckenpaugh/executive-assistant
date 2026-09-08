@@ -1,0 +1,12 @@
+:root { --ink:#223047; --accent:#315d9b; --surface:#fff; --mist:#f4f7fb; }
+body { color:var(--ink); background:var(--mist); }
+.app-shell { max-width:1180px; }
+.app-nav,.page-card,.stat-card { background:var(--surface); border:1px solid #dfe7f1; border-radius:14px; box-shadow:0 2px 10px rgb(27 55 95 / 5%); }
+.page-card,.stat-card { padding:1.25rem; }
+.nav-link.active { color:var(--accent); font-weight:600; }
+.record-row { border-bottom:1px solid #edf1f6; padding:.75rem 0; }
+.record-row:last-child { border:0; }
+.record-meta,.empty-state { color:#667085; font-size:.9rem; }
+.eyebrow { color:var(--accent); font-size:.78rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.badge-soft { background:#e8f0fc; color:#234d87; }
+.workspace { font-size:.82rem; color:#667085; }
