@@ -11,7 +11,8 @@
   <div class="container app-shell py-3 py-md-4">
     <nav class="navbar navbar-expand-lg app-nav px-3 py-2 mb-4" aria-label="Primary navigation">
       <a class="navbar-brand fw-semibold" href="#/">Executive Assistant</a>
-      <div class="navbar-nav ms-auto flex-row flex-wrap gap-1" id="nav"></div>
+      <form id="ai-command-form" class="d-flex ms-auto me-3 my-1"><input class="form-control form-control-sm me-2" id="ai-command-input" type="text" placeholder="✨ AI command (e.g. Schedule meeting tomorrow 2pm)..." style="min-width: 280px;"><button class="btn btn-sm btn-outline-primary" type="submit">Run</button></form>
+      <div class="navbar-nav flex-row flex-wrap gap-1" id="nav"></div>
     </nav>
     <div id="flash" aria-live="polite"></div>
     <main id="app"><p class="text-secondary">Opening local workspace…</p></main>
