@@ -21,16 +21,88 @@ function replaceLinks(type,id,data) { for(const [join,own,other,key] of links[ty
 function record(type,id) { const row=one(`SELECT * FROM ${table(type)} WHERE id=?`,[id]); if(!row) throw new Error('Record not found'); return {...row,...getLinks(type,id)}; }
 function asLocalDate(stamp) { return new Date(`${String(stamp).slice(0,16)}:00`); }
 function addDays(stamp, days) { const date=asLocalDate(stamp); date.setDate(date.getDate()+days); return localStamp(date); }
+function addHours(stamp, hours) { const date=asLocalDate(stamp); date.setHours(date.getHours()+hours); return localStamp(date); }
 function seed() {
-  const now=localStamp(), jordan=now, tomorrow=addDays(now,1), inHours=localStamp(new Date(Date.now()+3*3600000)), reminder=localStamp(new Date(Date.now()+20*3600000));
-  run("INSERT INTO contacts (name,email,organization,role,relationship_context,is_sample,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)",['Jordan Lee','jordan@example.com','Northstar Labs','Partner','Primary project contact',1,now,now]);
-  run("INSERT INTO commitments (title,kind,starts_at,duration_minutes,location,attendees,is_sample,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)",['Product planning','meeting',tomorrow,45,'Video call','Jordan Lee',1,now,now]);
-  run("INSERT INTO tasks (title,priority,due_at,is_sample,created_at,updated_at) VALUES (?,?,?,?,?,?)",['Review weekly priorities','high',inHours,1,now,now]);
-  run("INSERT INTO task_contacts VALUES (?,?)",[1,1]); run("INSERT INTO commitment_contacts VALUES (?,?)",[1,1]);
-  run("INSERT INTO tasks (title,priority,due_at,recurrence,is_sample,created_at,updated_at) VALUES (?,?,?,?,?,?,?)",['Send project recap','medium',tomorrow,'weekly',1,now,now]);
-  run("INSERT INTO notes (title,content,kind,commitment_id,is_sample,created_at,updated_at) VALUES (?,?,?,?,?,?,?)",['Planning agenda','Review milestones and risks.','preparation',1,1,now,now]);
-  run("INSERT INTO reminders (title,remind_at,commitment_id,is_sample,created_at,updated_at) VALUES (?,?,?,?,?,?)",['Prepare planning agenda',reminder,1,1,now,now]);
-  run("INSERT INTO inbox_items (content,is_sample,created_at,updated_at) VALUES (?,?,?,?)",['Ask Jordan about launch dates',1,now,now]);
+  const now=localStamp();
+  const insert=(name, fields) => { const columns=Object.keys(fields); run(`INSERT INTO ${name} (${columns.join(',')}) VALUES (${columns.map(()=>'?').join(',')})`,Object.values(fields)); return one('SELECT last_insert_rowid() AS id').id; };
+  const sample=(fields)=>({...fields,is_sample:1,created_at:now,updated_at:now});
+  const contacts={};
+  [
+    ['jordan',{name:'Jordan Lee',email:'jordan@northstarlabs.example',phone:'555-0142',organization:'Northstar Labs',role:'Product partner',relationship_context:'Primary launch partner; prefers a concise Friday status note.'}],
+    ['maya',{name:'Maya Patel',email:'maya@brightline.example',phone:'555-0188',organization:'Brightline Studio',role:'Design director',relationship_context:'Leads the design-system work. Include her in accessibility decisions.'}],
+    ['marcus',{name:'Marcus Chen',email:'marcus@harborside.example',phone:'555-0127',organization:'Harborside Capital',role:'Operating partner',relationship_context:'Quarterly advisor and potential customer introduction source.'}],
+    ['elena',{name:'Elena Rodriguez',email:'elena@northstarlabs.example',phone:'555-0175',organization:'Northstar Labs',role:'Engineering lead',relationship_context:'Owns the integration timeline and release readiness.'}],
+    ['noah',{name:'Noah Williams',email:'noah@clearwater.example',phone:'555-0151',organization:'Clearwater Health',role:'Customer success lead',relationship_context:'Pilot customer champion; checks in every other week.'}],
+    ['priya',{name:'Priya Shah',email:'priya@counsel.example',phone:'555-0194',organization:'Shah & Morgan',role:'Counsel',relationship_context:'Review privacy and commercial terms before pilot expansion.'}],
+    ['sam',{name:'Sam Okafor',email:'sam@northstarlabs.example',phone:'555-0163',organization:'Northstar Labs',role:'Operations manager',relationship_context:'Coordinates vendor renewals, travel, and company all-hands.'}],
+    ['lina',{name:'Lina Berg',email:'lina@fieldnotes.example',phone:'555-0118',organization:'Field Notes Research',role:'Research partner',relationship_context:'Runs customer interviews and synthesizes insight reports.'}]
+  ]
+    .forEach(([key,fields])=>contacts[key]=insert('contacts',sample(fields)));
+  const commitments={};
+  [
+    ['planning',{title:'Product planning',kind:'meeting',starts_at:addHours(now,20),duration_minutes:45,location:'Video call',attendees:'Jordan Lee, Elena Rodriguez',notes:'Decide launch scope and confirm the integration milestone.'}],
+    ['design',{title:'Design-system review',kind:'meeting',starts_at:addDays(now,2),duration_minutes:60,location:'Studio 4B',attendees:'Maya Patel, Elena Rodriguez',notes:'Review the dashboard and quick-capture interaction patterns.'}],
+    ['pilot',{title:'Clearwater pilot check-in',kind:'meeting',starts_at:addDays(now,3),duration_minutes:30,location:'Video call',attendees:'Noah Williams',notes:'Discuss adoption, support issues, and pilot extension criteria.'}],
+    ['advisor',{title:'Advisor office hours',kind:'meeting',starts_at:addDays(now,5),duration_minutes:45,location:'Harborside Capital',attendees:'Marcus Chen',notes:'Share progress, risks, and requests for introductions.'}],
+    ['allhands',{title:'Company all-hands',kind:'other',starts_at:addDays(now,6),duration_minutes:60,location:'Main conference room',attendees:'Northstar Labs team',notes:'Team updates, operating metrics, and open Q&A.'}],
+    ['privacy',{title:'Privacy terms review',kind:'meeting',starts_at:addDays(now,8),duration_minutes:45,location:'Video call',attendees:'Priya Shah',notes:'Review pilot data-processing language and open questions.'}],
+    ['past',{title:'Last week launch retrospective',kind:'meeting',starts_at:addDays(now,-4),duration_minutes:60,location:'Video call',attendees:'Jordan Lee, Maya Patel',notes:'Completed retrospective with follow-up actions captured.',status:'completed'}],
+    ['cancelled',{title:'Vendor evaluation call',kind:'other',starts_at:addDays(now,4),duration_minutes:30,location:'Phone',attendees:'Sam Okafor',notes:'Reschedule once the revised proposal arrives.',status:'cancelled'}]
+  ]
+    .forEach(([key,fields])=>commitments[key]=insert('commitments',sample({...fields,status:fields.status||'scheduled'})));
+  const tasks={};
+  [
+    ['priorities',{title:'Review weekly priorities',description:'Select the three outcomes that matter most this week and communicate tradeoffs.',priority:'high',due_at:addHours(now,3)}],
+    ['recap',{title:'Send product planning recap',description:'Summarize decisions, owners, and unresolved questions after planning.',priority:'medium',due_at:addDays(now,1),recurrence:'weekly'}],
+    ['brief',{title:'Prepare Clearwater pilot brief',description:'Pull adoption metrics, top support themes, and the renewal timeline.',priority:'high',due_at:addDays(now,2)}],
+    ['design',{title:'Review dashboard design changes',description:'Leave actionable feedback on the new quick-capture and reminder screens.',priority:'medium',due_at:addDays(now,2)}],
+    ['terms',{title:'Send privacy questions to counsel',description:'Clarify retention, access controls, and the pilot expansion language.',priority:'high',due_at:addDays(now,6)}],
+    ['budget',{title:'Approve Q4 tooling budget',description:'Compare the revised vendor quotes before the finance cutoff.',priority:'medium',due_at:addDays(now,7)}],
+    ['interviews',{title:'Read customer interview synthesis',description:'Highlight recurring requests and decide which themes need follow-up.',priority:'low',due_at:addDays(now,4)}],
+    ['travel',{title:'Confirm advisor meeting travel',description:'Book train and add the office address to the calendar invite.',priority:'low',due_at:addDays(now,4)}],
+    ['overdue',{title:'Reply to partner introduction',description:'Thank Marcus and propose two times for a first conversation.',priority:'high',due_at:addDays(now,-1)}],
+    ['completed',{title:'Publish launch retrospective notes',description:'Share the agreed lessons and ownership list with the team.',priority:'medium',due_at:addDays(now,-2),status:'completed',completed_at:addDays(now,-1)}],
+    ['metrics',{title:'Update weekly operating metrics',description:'Refresh the team dashboard before all-hands.',priority:'medium',due_at:addDays(now,6),recurrence:'weekly',recurrence_until:addDays(now,70)}]
+  ]
+    .forEach(([key,fields])=>tasks[key]=insert('tasks',sample({...fields,status:fields.status||'open',recurrence:fields.recurrence||'none'})));
+  const taskLink=(task, commitment)=>run('INSERT INTO task_commitments VALUES (?,?)',[tasks[task],commitments[commitment]]);
+  const taskContact=(task, contact)=>run('INSERT INTO task_contacts VALUES (?,?)',[tasks[task],contacts[contact]]);
+  const commitmentContact=(commitment, contact)=>run('INSERT INTO commitment_contacts VALUES (?,?)',[commitments[commitment],contacts[contact]]);
+  [['priorities','planning'],['recap','planning'],['brief','pilot'],['design','design'],['terms','privacy'],['budget','allhands'],['travel','advisor'],['metrics','allhands'],['completed','past']].forEach(([a,b])=>taskLink(a,b));
+  [['priorities','elena'],['recap','jordan'],['brief','noah'],['design','maya'],['terms','priya'],['budget','sam'],['interviews','lina'],['travel','marcus'],['overdue','marcus']].forEach(([a,b])=>taskContact(a,b));
+  [['planning','jordan'],['planning','elena'],['design','maya'],['design','elena'],['pilot','noah'],['advisor','marcus'],['privacy','priya'],['allhands','sam'],['past','jordan'],['past','maya']].forEach(([a,b])=>commitmentContact(a,b));
+  const notes={};
+  [
+    ['planning',{title:'Planning agenda',content:'Review launch scope, integration readiness, decision owners, and the next customer checkpoint.',kind:'preparation',commitment_id:commitments.planning}],
+    ['planningFollow',{title:'Planning follow-up',content:'Jordan owns partner communication. Elena will publish the integration readiness checklist by Thursday.',kind:'follow_up',commitment_id:commitments.planning}],
+    ['pilot',{title:'Clearwater pilot talking points',content:'Ask about weekly active usage, clinician feedback, export workflow friction, and what would justify expansion.',kind:'preparation',commitment_id:commitments.pilot}],
+    ['design',{title:'Design review questions',content:'Focus on quick capture, visual priority hierarchy, keyboard behavior, and empty-state guidance.',kind:'preparation',commitment_id:commitments.design}],
+    ['advisor',{title:'Advisor update outline',content:'Progress: pilot adoption and integration. Risks: privacy review timing. Ask: two enterprise introductions.',kind:'preparation',commitment_id:commitments.advisor}],
+    ['research',{title:'Interview synthesis themes',content:'Customers value quick triage, clearer ownership, and follow-up prompts after meetings.',kind:'general'}],
+    ['retro',{title:'Launch retrospective outcomes',content:'Keep the release checklist short, set explicit owners earlier, and schedule a customer follow-up before launch.',kind:'follow_up',commitment_id:commitments.past}]
+  ]
+    .forEach(([key,fields])=>notes[key]=insert('notes',sample(fields)));
+  const taskNote=(task,note)=>run('INSERT INTO task_notes VALUES (?,?)',[tasks[task],notes[note]]);
+  const contactNote=(contact,note)=>run('INSERT INTO contact_notes VALUES (?,?)',[contacts[contact],notes[note]]);
+  [['recap','planningFollow'],['brief','pilot'],['design','design'],['interviews','research'],['travel','advisor']].forEach(([a,b])=>taskNote(a,b));
+  [['jordan','planning'],['jordan','planningFollow'],['noah','pilot'],['maya','design'],['marcus','advisor'],['lina','research']].forEach(([a,b])=>contactNote(a,b));
+  [
+    {title:'Prepare planning agenda',remind_at:addHours(now,16),commitment_id:commitments.planning,status:'upcoming'},
+    {title:'Review pilot metrics',remind_at:addDays(now,2),task_id:tasks.brief,status:'upcoming'},
+    {title:'Book advisor travel',remind_at:addDays(now,3),task_id:tasks.travel,status:'upcoming'},
+    {title:'Privacy review prep',remind_at:addDays(now,7),commitment_id:commitments.privacy,status:'snoozed'},
+    {title:'Send product recap',remind_at:addDays(now,-1),task_id:tasks.recap,status:'acknowledged'},
+    {title:'Read research synthesis',remind_at:addDays(now,-2),task_id:tasks.interviews,status:'dismissed'}
+  ].forEach(fields=>insert('reminders',sample(fields)));
+  [
+    {content:'Ask Jordan whether the partner launch dates are still realistic.',status:'pending'},
+    {content:'Capture two customer quotes from the latest interview recording.',status:'pending'},
+    {content:'Decide whether the design review needs a follow-up workshop.',status:'pending'},
+    {content:'Order thank-you cards for the pilot team.',status:'pending'},
+    {content:'Follow up with Marcus about the enterprise introduction.',status:'processed',processed_type:'task',processed_id:tasks.overdue},
+    {content:'Save the launch retrospective takeaways.',status:'processed',processed_type:'note',processed_id:notes.retro},
+    {content:'Consider a reminder for the monthly vendor audit.',status:'dismissed'}
+  ].forEach(fields=>insert('inbox_items',sample(fields)));
 }
 async function initialize() {
   if(initialized) return; if(fatal) throw fatal;
