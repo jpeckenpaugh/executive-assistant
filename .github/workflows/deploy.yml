@@ -30,6 +30,7 @@ jobs:
         run: |
           mkdir -p _site
           cp poc-browser/index.html _site/
+          cp poc-browser/favicon.ico _site/ 2>/dev/null || true
           cp -R poc-browser/css poc-browser/js poc-browser/vendor _site/
           touch _site/.nojekyll
 
